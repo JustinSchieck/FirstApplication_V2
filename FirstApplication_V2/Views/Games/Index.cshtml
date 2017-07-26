@@ -42,9 +42,14 @@
             @Html.DisplayFor(modelItem => item.EditDate)
         </td>
         <td>
-            @Html.ActionLink("Edit", "Edit", new { id=item.GameId }) |
-            @Html.ActionLink("Details", "Details", new { id=item.GameId }) |
-            @Html.ActionLink("Delete", "Delete", new { id=item.GameId })
+            @Html.ActionLink("Edit", "Edit", new { id=item.GameId })
+            @if (Request.IsAuthenticated)
+            {
+                <text> | </text>
+                @Html.ActionLink("Edit", "Edit", new { id=item.GameId }) <text> | </text>
+                @Html.ActionLink("Delete", "Delete", new { id = item.GameId })
+            
+            }
         </td>
     </tr>
 }

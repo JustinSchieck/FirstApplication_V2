@@ -12,7 +12,7 @@ namespace FirstApplication_V2.Controllers
 {
     public class GameGenresController : Controller
     {
-        private Model1 db = new Model1();
+        private DataContext db = new DataContext();
 
         // GET: GameGenres
         public ActionResult Index()
@@ -53,13 +53,23 @@ namespace FirstApplication_V2.Controllers
         {
             if (ModelState.IsValid)
             {
-                gameGenre.GameGenreId = Guid.NewGuid().ToString();
-                gameGenre.CreateDate = DateTime.Now;
-                gameGenre.EditDate = gameGenre.CreateDate;
+                GameGenre tmpGameGenre = db.GameGenres.SingleOrDefault(y => y.GameId == gameGenre.GameId && y.GenreId == gameGenre.GenreId);
+                //Game game = db.Games.Find(id);
+                if (tmpGameGenre == null)
+                {
 
-                db.GameGenres.Add(gameGenre);
-                db.SaveChanges();
-                return RedirectToAction("Index");
+                    gameGenre.GameGenreId = Guid.NewGuid().ToString();
+                    gameGenre.CreateDate = DateTime.Now;
+                    gameGenre.EditDate = gameGenre.CreateDate;
+
+                    db.GameGenres.Add(gameGenre);
+                    db.SaveChanges();
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Duplicate Entry Found");
+                }
             }
 
             ViewBag.GameId = new SelectList(db.Games, "GameId", "Name", gameGenre.GameId);
@@ -112,6 +122,7 @@ namespace FirstApplication_V2.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
             GameGenre gameGenre = db.GameGenres.Find(id);
+        
             if (gameGenre == null)
             {
                 return HttpNotFound();
@@ -124,8 +135,21 @@ namespace FirstApplication_V2.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(string id)
         {
-            GameGenre gameGenre = db.GameGenres.Find(id);
-            db.GameGenres.Remove(gameGenre);
+            Game game = db.Games.Find(id);
+
+            if (game == null)
+            {
+                return HttpNotFound();
+            }
+
+            //delete foreign key objects
+            foreach (var item in game.Genres.ToList())
+            {
+                db.GameGenres.Remove(item);
+            }
+
+            db.Games.Remove(game);
+            var deleted = db.ChangeTracker.Entries().Where(e => e.State == EntityState.Deleted);
             db.SaveChanges();
             return RedirectToAction("Index");
         }

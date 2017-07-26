@@ -18,13 +18,17 @@
             @Html.DisplayFor(model => model.Name)
         </dd>
         <dt>
-            @Html.DisplayNameFor(model => model.GameGenres)
+            @Html.DisplayNameFor(model => model.Games)
         </dt>
-        @{
-            string GameNames = (Model.GetGameNames());
-        }
         <dd>
-            @Html.DisplayFor(model => GameNames)
+            <ul>
+                @foreach (var gameGenre in Model.Games)
+            {
+
+                    <li>@gameGenre.Game.Name</li>
+
+                }
+            </ul>
         </dd>
         <dt>
             @Html.DisplayNameFor(model => model.CreateDate)

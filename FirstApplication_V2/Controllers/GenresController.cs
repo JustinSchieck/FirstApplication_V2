@@ -12,7 +12,7 @@ namespace FirstApplication_V2.Controllers
 {
     public class GenresController : Controller
     {
-        private Model1 db = new Model1();
+        private DataContext db = new DataContext();
 
         // GET: Genres
         public ActionResult Index()
@@ -28,7 +28,8 @@ namespace FirstApplication_V2.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            Genre genre = db.Genres.Find(id);
+            //Genre genre = db.Genres.Find(id);
+            Genre genre = db.Genres.Include(x => x.Games.Select(g => g.Game)).SingleOrDefault(y => y.GenreId == id);
             if (genre == null)
             {
                 return HttpNotFound();
@@ -39,6 +40,9 @@ namespace FirstApplication_V2.Controllers
         // GET: Genres/Create
         public ActionResult Create()
         {
+            Genre model = new Genre();
+            model.Name = String.Format("Genre - {0}", DateTime.Now.Ticks);
+            ViewBag.Games = new MultiSelectList(db.Games.ToList(), "GameId", "Name", model.Games);
             return View();
         }
 
@@ -47,19 +51,41 @@ namespace FirstApplication_V2.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "Name")] Genre genre)
+        public ActionResult Create([Bind(Include = "Name, GameIds")] Genre genre, string[] GameIds)
         {
             if (ModelState.IsValid)
             {
+                Game checkGenre = db.Games.SingleOrDefault(x => x.Name == genre.Name);
+
+                if (checkGenre == null)
+                {
                 genre.GenreId = Guid.NewGuid().ToString();
                 genre.CreateDate = DateTime.Now;
                 genre.EditDate = genre.CreateDate;
 
                 db.Genres.Add(genre);
                 db.SaveChanges();
+                    foreach (string gameId in GameIds)
+                    {
+                        GameGenre gameGenre = new Models.GameGenre();
+
+                        gameGenre.GameGenreId = Guid.NewGuid().ToString();
+                        gameGenre.CreateDate = DateTime.Now;
+                        gameGenre.EditDate = genre.CreateDate;
+
+                        gameGenre.GenreId = genre.GenreId;
+                        gameGenre.GameId = gameId;
+                        db.GameGenres.Add(gameGenre);
+                    }
+                }
+                db.SaveChanges();
                 return RedirectToAction("Index");
             }
-
+            else
+            {
+                ModelState.AddModelError("", "Duplicate Genre Detected.");
+            }
+            ViewBag.Games = new MultiSelectList(db.Games.ToList(), "GameId", "Name", GameIds);
             return View(genre);
         }
 
@@ -75,6 +101,7 @@ namespace FirstApplication_V2.Controllers
             {
                 return HttpNotFound();
             }
+            ViewBag.Games = new MultiSelectList(db.Games.ToList(), "GameId", "Name", genre.Games);
             return View(genre);
         }
 
@@ -83,16 +110,50 @@ namespace FirstApplication_V2.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "GenreId,Name,CreateDate")] Genre genre)
+        public ActionResult Edit([Bind(Include = "GenreId,Name,CreateDate,GameIds")] Genre genre, string[] GameIds)
         {
             if (ModelState.IsValid)
             {
-                genre.EditDate = DateTime.Now;
+                Game checkGenre = db.Games.SingleOrDefault(x => x.Name == genre.Name);
 
-                db.Entry(genre).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
+                if (checkGenre == null)
+                {
+                    genre.EditDate = DateTime.Now;
+                    db.Entry(genre).State = EntityState.Modified;
+                    //item to remove
+                    var removeItems = genre.Games.Where(x => !GameIds.Contains(x.GameId)).ToList();
+                    foreach (var removeItem in removeItems)
+                    {
+                        db.Entry(removeItem).State = EntityState.Deleted;
+                    }
+
+                    if (GameIds != null)
+                    {
+                        var addedItems = GameIds.Where(x => !genre.Games.Select(y => y.GameId).Contains(x)).ToList();
+
+                        foreach (string addedItem in addedItems)
+                        {
+                            GameGenre gameGenre = new GameGenre();
+
+                            gameGenre.GameGenreId = Guid.NewGuid().ToString();
+                            gameGenre.CreateDate = DateTime.Now;
+                            gameGenre.EditDate = gameGenre.CreateDate;
+
+                            gameGenre.GameId = addedItem;
+                            gameGenre.GenreId = genre.GenreId;
+                            db.GameGenres.Add(gameGenre);
+                        }
+                    }
+
+                    db.SaveChanges();
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Duplicate Genre Detected.");
+                }
             }
+            ViewBag.Games = new MultiSelectList(db.Games.ToList(), "GameId", "Name", genre.Games);
             return View(genre);
         }
 
@@ -103,11 +164,13 @@ namespace FirstApplication_V2.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Genre genre = db.Genres.Find(id);
+            Genre genre = db.Genres.Include(x => x.Games.Select(g => g.Game)).SingleOrDefault(y => y.GenreId == id);
+            //Genre genre = db.Genres.Find(id);
             if (genre == null)
             {
                 return HttpNotFound();
             }
+
             return View(genre);
         }
 
@@ -116,8 +179,19 @@ namespace FirstApplication_V2.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(string id)
         {
-            Genre genre = db.Genres.Find(id);
+            Genre genre = db.Genres.Include(x => x.Games.Select(g => g.Game)).SingleOrDefault(y => y.GenreId == id);
+            if (genre == null)
+            {
+                return HttpNotFound();
+            }
+
+            foreach (var item in genre.Games.ToList())
+            {
+                db.GameGenres.Remove(item);
+            }
+
             db.Genres.Remove(genre);
+            var deleted = db.ChangeTracker.Entries().Where(e => e.State == EntityState.Deleted);
             db.SaveChanges();
             return RedirectToAction("Index");
         }

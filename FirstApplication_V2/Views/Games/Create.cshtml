@@ -33,6 +33,22 @@
                 </div>
             </div>
         </div>
+        <div class="form-group">
+            @Html.LabelFor(model => model.Genres, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <ul>
+                        @foreach (var gameGenre in (MultiSelectList)ViewBag.Genres)
+                        {
+
+                            <li><input type="checkbox" value="@gameGenre.Value" name="GenreIds"/>@gameGenre.Text</li>
+
+                        }
+                    </ul>
+                    @Html.ValidationMessageFor(model => model.Genres, "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">

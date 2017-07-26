@@ -23,6 +23,22 @@
                 @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
             </div>
         </div>
+        <div class="form-group">
+            @Html.LabelFor(model => model.Games, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                <div class="checkbox">
+                    <ul>
+                        @foreach (var gameGenre in (MultiSelectList)ViewBag.Games)
+                        {
+
+                            <li><input type="checkbox" value="@gameGenre.Value" id="GameIds" name="GameIds" />@gameGenre.Text</li>
+
+                        }
+                    </ul>
+                    @Html.ValidationMessageFor(model => model.Games, "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">

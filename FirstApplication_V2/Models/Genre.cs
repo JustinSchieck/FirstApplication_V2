@@ -12,9 +12,11 @@ namespace FirstApplication_V2.Models
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Genre()
         {
-            GameGenres = new HashSet<GameGenre>();
+            Games = new HashSet<GameGenre>();
         }
 
+        [Key]
+        [DatabaseGenerated(databaseGeneratedOption: DatabaseGeneratedOption.Identity)]
         public string GenreId { get; set; }
 
         [Required]
@@ -23,23 +25,21 @@ namespace FirstApplication_V2.Models
         public string Name { get; set; }
 
 
+        [Display(Name = "Create Date")]
+        [DatabaseGenerated(databaseGeneratedOption: DatabaseGeneratedOption.Identity)]
         public DateTime CreateDate { get; set; }
 
-
+        [Display(Name = "Edit Date")]
+        //[DatabaseGenerated(databaseGeneratedOption: DatabaseGeneratedOption.Identity)]
         public DateTime EditDate { get; set; }
 
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<GameGenre> GameGenres { get; set; }
+        [InverseProperty("Genre")]
+        public virtual ICollection<GameGenre> Games { get; set; }
 
-        public String GetGameNames()
+        public override string ToString()
         {
-            ArrayList temp = new ArrayList();
-            foreach (GameGenre g in GameGenres)
-            {
-                temp.Add(g.Game.Name);
-            }
-            return string.Join(", ", temp.ToArray());
+            return String.Format("{0}", Name);
         }
     }
 }
